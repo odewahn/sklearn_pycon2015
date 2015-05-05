@@ -1,9 +1,12 @@
 <p><small><i>This notebook was put together by <a href='http://www.vanderplas.com'>Jake Vanderplas</a> for PyCon 2015. Source and license info is on <a href='https://github.com/jakevdp/sklearn_pycon2015/'>GitHub</a>.</i></small></p>
+
 <section data-type='chapter'>
 <h1>Supervised Learning In-Depth: Support Vector Machines</h1>
 
+
 <p>Previously we introduced supervised machine learning.
-There are many supervised learning algorithms available; here we'll go into brief detail one of the most powerful and interesting methods: <strong>Support Vector Machines (SVMs)</strong>.</p>
+There are many supervised learning algorithms available; here we’ll go into brief detail one of the most powerful and interesting methods: <strong>Support Vector Machines (SVMs)</strong>.</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 %matplotlib inline
 import numpy as np
@@ -17,8 +20,11 @@ import seaborn as sns; sns.set()
 <section data-type='sect1'>
 <h1>Motivating Support Vector Machines</h1>
 
+
 <p>Support Vector Machines (SVMs) are a powerful supervised learning algorithm used for <strong>classification</strong> or for <strong>regression</strong>. SVMs are a <strong>discriminative</strong> classifier: that is, they draw a boundary between clusters of data.</p>
-<p>Let's show a quick example of support vector classification. First we need to create a dataset:</p>
+
+<p>Let’s show a quick example of support vector classification. First we need to create a dataset:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 from sklearn.datasets.samples_generator import make_blobs
 X, y = make_blobs(n_samples=50, centers=2,
@@ -27,6 +33,7 @@ plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='spring');
 </pre>
 
 <p>A discriminative classifier attempts to draw a line between the two sets of data. Immediately we see a problem: such a line is ill-posed! For example, we could come up with several possibilities which perfectly discriminate between the classes in this example:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 xfit = np.linspace(-1, 3.5)
 plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='spring')
@@ -38,12 +45,16 @@ plt.xlim(-1, 3.5);
 </pre>
 
 <p>These are three <em>very</em> different separaters which perfectly discriminate between these samples. Depending on which you choose, a new data point will be classified almost entirely differently!</p>
+
 <p>How can we improve on this?</p>
+
 <section data-type='sect2'>
 <h2>Support Vector Machines: Maximizing the <em>Margin</em></h2>
 
+
 <p>Support vector machines are one way to address this.
-What support vector machined do is to not only draw a line, but consider a <em>region</em> about the line of some given width.  Here's an example of what it might look like:</p>
+What support vector machined do is to not only draw a line, but consider a <em>region</em> about the line of some given width.  Here’s an example of what it might look like:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 xfit = np.linspace(-1, 3.5)
 plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='spring')
@@ -58,17 +69,21 @@ plt.xlim(-1, 3.5);
 
 <p>Notice here that if we want to maximize this width, the middle fit is clearly the best.
 This is the intuition of <strong>support vector machines</strong>, which optimize a linear discriminant model in conjunction with a <strong>margin</strong> representing the perpendicular distance between the datasets.</p>
+
 <section data-type='sect3'>
 <h3>Fitting a Support Vector Machine</h3>
 
-<p>Now we'll fit a Support Vector Machine Classifier to these points. While the mathematical details of the likelihood model are interesting, we'll let you read about those elsewhere. Instead, we'll just treat the scikit-learn algorithm as a black box which accomplishes the above task.</p>
+
+<p>Now we’ll fit a Support Vector Machine Classifier to these points. While the mathematical details of the likelihood model are interesting, we’ll let you read about those elsewhere. Instead, we’ll just treat the scikit-learn algorithm as a black box which accomplishes the above task.</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 from sklearn.svm import SVC # "Support Vector Classifier"
 clf = SVC(kernel='linear')
 clf.fit(X, y)
 </pre>
 
-<p>To better visualize what's happening here, let's create a quick convenience function that will plot SVM decision boundaries for us:</p>
+<p>To better visualize what’s happening here, let’s create a quick convenience function that will plot SVM decision boundaries for us:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 def plot_svc_decision_function(clf, ax=None):
     """Plot the decision function for a 2D SVC"""
@@ -94,6 +109,7 @@ plot_svc_decision_function(clf);
 
 <p>Notice that the dashed lines touch a couple of the points: these points are the pivotal pieces of this fit, and are known as the <em>support vectors</em> (giving the algorithm its name).
 In scikit-learn, these are stored in the <code>support_vectors_</code> attribute of the classifier:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='spring')
 plot_svc_decision_function(clf)
@@ -101,8 +117,9 @@ plt.scatter(clf.support_vectors_[:, 0], clf.support_vectors_[:, 1],
             s=200, facecolors='none');
 </pre>
 
-<p>Let's use IPython's <code>interact</code> functionality to explore how the distribution of points affects the support vectors and the discriminative fit.
+<p>Let’s use IPython’s <code>interact</code> functionality to explore how the distribution of points affects the support vectors and the discriminative fit.
 (This is only available in IPython 2.0+, and will not work in a static view)</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 from IPython.html.widgets import interact
 
@@ -124,12 +141,15 @@ interact(plot_svm, N=[10, 200], kernel='linear');
 </pre>
 
 <p>Notice the unique thing about SVM is that only the support vectors matter: that is, if you moved any of the other points without letting them cross the decision boundaries, they would have no effect on the classification results!</p>
+
 </section>
 <section data-type='sect3'>
 <h3>Going further: Kernel Methods</h3>
 
+
 <p>Where SVM gets incredibly exciting is when it is used in conjunction with <em>kernels</em>.
-To motivate the need for kernels, let's look at some data which is not linearly separable:</p>
+To motivate the need for kernels, let’s look at some data which is not linearly separable:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 from sklearn.datasets.samples_generator import make_circles
 X, y = make_circles(100, factor=.1, noise=.1)
@@ -142,12 +162,15 @@ plot_svc_decision_function(clf);
 
 <p>Clearly, no linear discrimination will ever separate these data.
 One way we can adjust this is to apply a <strong>kernel</strong>, which is some functional transformation of the input data.</p>
+
 <p>For example, one simple model we could use is a <strong>radial basis function</strong></p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 r = np.exp(-(X[:, 0] ** 2 + X[:, 1] ** 2))
 </pre>
 
 <p>If we plot this along with our data, we can see the effect of it:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 from mpl_toolkits import mplot3d
 
@@ -164,6 +187,7 @@ interact(plot_3D, elev=[-90, 90], azip=(-180, 180));
 
 <p>We can see that with this additional dimension, the data becomes trivially linearly separable!
 This is a relatively simple kernel; SVM has a more sophisticated version of this kernel built-in to the process. This is accomplished by using <code>kernel='rbf'</code>, short for <em>radial basis function</em>:</p>
+
 <pre data-code-language='python' data-executable='true' data-type='programlisting'>
 clf = SVC(kernel='rbf')
 clf.fit(X, y)
@@ -174,8 +198,9 @@ plt.scatter(clf.support_vectors_[:, 0], clf.support_vectors_[:, 1],
             s=200, facecolors='none');
 </pre>
 
-<p>Here there are effectively <span class='math-tex' data-type='tex'>\(N\)</span> basis functions: one centered at each point! Through a clever mathematical trick, this computation proceeds very efficiently using the "Kernel Trick", without actually constructing the matrix of kernel evaluations.</p>
-<p>We'll leave SVMs for the time being and take a look at another classification algorithm: Random Forests.</p>
+<p>Here there are effectively <span class='math-tex' data-type='tex'>\(N\)</span> basis functions: one centered at each point! Through a clever mathematical trick, this computation proceeds very efficiently using the “Kernel Trick”, without actually constructing the matrix of kernel evaluations.</p>
+
+<p>We’ll leave SVMs for the time being and take a look at another classification algorithm: Random Forests.</p>
 </section>
 </section>
 </section>

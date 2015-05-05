@@ -1,15 +1,7 @@
 {
   "branch": "atlas",
   "files": [
-    "notebooks/01-Preliminaries.md",
-    "notebooks/02.1-Machine-Learning-Intro.md",
-    "notebooks/02.2-Basic-Principles.md",
-    "notebooks/03.1-Classification-SVMs.md",
-    "notebooks/03.2-Regression-Forests.md",
-    "notebooks/04.1-Dimensionality-PCA.md",
-    "notebooks/04.2-Clustering-KMeans.md",
-    "notebooks/04.3-Density-GMM.md",
-    "notebooks/05-Validation.md"
+    "notebooks/03.1-Classification-SVMs.md"
   ],
   "formats": {
     "pdf": {
@@ -37,10 +29,14 @@
       "toc": false,
       "syntaxhighlighting": false,
       "show_comments": false,
-      "consolidated": false
+      "consolidated": false,
+      "javascripts": [
+        "http://rawgit.com/oreillymedia/thebe/master/static/main-built.js",
+        "page.js"
+      ],
+      "uuid": "8907c622-3cad-4640-814b-039241c60f4b"
     }
   },
   "theme": "oreillymedia/atlas_tech1c_theme",
-  "title": "sklearn pycon2015",
-  "uuid": "61422a13-fac7-4ffa-9e07-27e12470126c"
+  "title": "Introduction to Support Vector Machines"
 }
