@@ -1,0 +1,256 @@
+<p><small><i>This notebook was put together by <a href='http://www.vanderplas.com'>Jake Vanderplas</a> for PyCon 2015. Source and license info is on <a href='https://github.com/jakevdp/sklearn_pycon2015/'>GitHub</a>.</i></small></p>
+<section data-type='chapter'>
+<h1>Introduction to Scikit-Learn: Machine Learning with Python</h1>
+
+<p>This session will cover the basics of Scikit-Learn, a popular package containing a collection of tools for machine learning written in Python. See more at <a href='http://scikit-learn.org'>http://scikit-learn.org</a>.</p>
+<section data-type='sect1'>
+<h1>Outline</h1>
+
+<p><strong>Main Goal:</strong> To introduce the central concepts of machine learning, and how they can be applied in Python using the Scikit-learn Package.</p>
+<ul>
+<li>Definition of machine learning</li>
+<li>Data representation in scikit-learn</li>
+<li>Introduction to the Scikit-learn API</li>
+</ul>
+</section>
+<section data-type='sect1'>
+<h1>About Scikit-Learn</h1>
+
+<p><a href='http://github.com/scikit-learn/scikit-learn'>Scikit-Learn</a> is a Python package designed to give access to <strong>well-known</strong> machine learning algorithms within Python code, through a <strong>clean, well-thought-out API</strong>. It has been built by hundreds of contributors from around the world, and is used across industry and academia.</p>
+<p>Scikit-Learn is built upon Python's <a href='http://numpy.org'>NumPy (Numerical Python)</a> and <a href='http://scipy.org'>SciPy (Scientific Python)</a> libraries, which enable efficient in-core numerical and scientific computation within Python. As such, scikit-learn is not specifically designed for extremely large datasets, though there is <a href='https://github.com/ogrisel/parallel_ml_tutorial'>some work</a> in this area.</p>
+<p>For this short introduction, I'm going to stick to questions of in-core processing of small to medium datasets with Scikit-learn.</p>
+</section>
+<section data-type='sect1'>
+<h1>What is Machine Learning?</h1>
+
+<p>In this section we will begin to explore the basic principles of machine learning.
+Machine Learning is about building programs with <strong>tunable parameters</strong> (typically an
+array of floating point values) that are adjusted automatically so as to improve
+their behavior by <strong>adapting to previously seen data.</strong></p>
+<p>Machine Learning can be considered a subfield of <strong>Artificial Intelligence</strong> since those
+algorithms can be seen as building blocks to make computers learn to behave more
+intelligently by somehow <strong>generalizing</strong> rather that just storing and retrieving data items
+like a database system would do.</p>
+<p>We'll take a look at two very simple machine learning tasks here.
+The first is a <strong>classification</strong> task: the figure shows a
+collection of two-dimensional data, colored according to two different class
+labels. A classification algorithm may be used to draw a dividing boundary
+between the two clusters of points:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+%matplotlib inline
+
+# set seaborn plot defaults.
+# This can be safely commented out
+import seaborn; seaborn.set()
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+# Import the example plot from the figures directory
+from fig_code import plot_sgd_separator
+plot_sgd_separator()
+</pre>
+
+<p>This may seem like a trivial task, but it is a simple version of a very important concept.
+By drawing this separating line, we have learned a model which can <strong>generalize</strong> to new
+data: if you were to drop another point onto the plane which is unlabeled, this algorithm
+could now <strong>predict</strong> whether it's a blue or a red point.</p>
+<p>If you'd like to see the source code used to generate this, you can either open the
+code in the <code>figures</code> directory, or you can load the code using the <code>%load</code> magic command:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+#Uncomment the %load command to load the contents of the file
+# %load fig_code/sgd_separator.py
+</pre>
+
+<p>The next simple task we'll look at is a <strong>regression</strong> task: a simple best-fit line
+to a set of data:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+from fig_code import plot_linear_regression
+plot_linear_regression()
+</pre>
+
+<p>Again, this is an example of fitting a model to data, such that the model can make
+generalizations about new data.  The model has been <strong>learned</strong> from the training
+data, and can be used to predict the result of test data:
+here, we might be given an x-value, and the model would
+allow us to predict the y value.  Again, this might seem like a trivial problem,
+but it is a basic example of a type of operation that is fundamental to
+machine learning tasks.</p>
+</section>
+<section data-type='sect1'>
+<h1>Representation of Data in Scikit-learn</h1>
+
+<p>Machine learning is about creating models from data: for that reason, we'll start by
+discussing how data can be represented in order to be understood by the computer.  Along
+with this, we'll build on our matplotlib examples from the previous section and show some
+examples of how to visualize data.</p>
+<p>Most machine learning algorithms implemented in scikit-learn expect data to be stored in a
+<strong>two-dimensional array or matrix</strong>.  The arrays can be
+either <code>numpy</code> arrays, or in some cases <code>scipy.sparse</code> matrices.
+The size of the array is expected to be <code>[n_samples, n_features]</code></p>
+<ul>
+<li><strong>n_samples:</strong>   The number of samples: each sample is an item to process (e.g. classify).
+A sample can be a document, a picture, a sound, a video, an astronomical object,
+a row in database or CSV file,
+or whatever you can describe with a fixed set of quantitative traits.</li>
+<li><strong>n_features:</strong>  The number of features or distinct traits that can be used to describe each
+item in a quantitative manner.  Features are generally real-valued, but may be boolean or
+discrete-valued in some cases.</li>
+</ul>
+<p>The number of features must be fixed in advance. However it can be very high dimensional
+(e.g. millions of features) with most of them being zeros for a given sample. This is a case
+where <code>scipy.sparse</code> matrices can be useful, in that they are
+much more memory-efficient than numpy arrays.</p>
+</section>
+<section data-type='sect1'>
+<h1>A Simple Example: the Iris Dataset</h1>
+
+<p>As an example of a simple dataset, we're going to take a look at the
+iris data stored by scikit-learn.
+The data consists of measurements of three different species of irises.
+There are three species of iris in the dataset, which we can picture here:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+from IPython.core.display import Image, display
+display(Image(filename='images/iris_setosa.jpg'))
+print("Iris Setosa\n")
+
+display(Image(filename='images/iris_versicolor.jpg'))
+print("Iris Versicolor\n")
+
+display(Image(filename='images/iris_virginica.jpg'))
+print("Iris Virginica")
+</pre>
+
+<section data-type='sect2'>
+<h2>Quick Question:</h2>
+
+<p><strong>If we want to design an algorithm to recognize iris species, what might the data be?</strong></p>
+<p>Remember: we need a 2D array of size <code>[n_samples x n_features]</code>.</p>
+<ul>
+<li><p>What would the <code>n_samples</code> refer to?</p>
+</li>
+<li><p>What might the <code>n_features</code> refer to?</p>
+</li>
+</ul>
+<p>Remember that there must be a <strong>fixed</strong> number of features for each sample, and feature
+number <code>i</code> must be a similar kind of quantity for each sample.</p>
+</section>
+<section data-type='sect2'>
+<h2>Loading the Iris Data with Scikit-Learn</h2>
+
+<p>Scikit-learn has a very straightforward set of data on these iris species.  The data consist of
+the following:</p>
+<ul>
+<li><p>Features in the Iris dataset:</p>
+<ol>
+<li>sepal length in cm</li>
+<li>sepal width in cm</li>
+<li>petal length in cm</li>
+<li>petal width in cm</li>
+</ol>
+</li>
+<li><p>Target classes to predict:</p>
+<ol>
+<li>Iris Setosa</li>
+<li>Iris Versicolour</li>
+<li>Iris Virginica</li>
+</ol>
+</li>
+</ul>
+<p><code>scikit-learn</code> embeds a copy of the iris CSV file along with a helper function to load it into numpy arrays:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+from sklearn.datasets import load_iris
+iris = load_iris()
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+iris.keys()
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+n_samples, n_features = iris.data.shape
+print((n_samples, n_features))
+print(iris.data[0])
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+print(iris.data.shape)
+print(iris.target.shape)
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+print(iris.target)
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+print(iris.target_names)
+</pre>
+
+<p>This data is four dimensional, but we can visualize two of the dimensions
+at a time using a simple scatter-plot:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+import numpy as np
+import matplotlib.pyplot as plt
+
+x_index = 0
+y_index = 1
+
+# this formatter will label the colorbar with the correct target names
+formatter = plt.FuncFormatter(lambda i, *args: iris.target_names[int(i)])
+
+plt.scatter(iris.data[:, x_index], iris.data[:, y_index],
+            c=iris.target, cmap=plt.cm.get_cmap('RdYlBu', 3))
+plt.colorbar(ticks=[0, 1, 2], format=formatter)
+plt.clim(-0.5, 2.5)
+plt.xlabel(iris.feature_names[x_index])
+plt.ylabel(iris.feature_names[y_index]);
+</pre>
+
+</section>
+<section data-type='sect2'>
+<h2>Quick Exercise:</h2>
+
+<p><strong>Change</strong> <code>x_index</code> <strong>and</strong> <code>y_index</code> <strong>in the above script
+and find a combination of two parameters
+which maximally separate the three classes.</strong></p>
+<p>This exercise is a preview of <strong>dimensionality reduction</strong>, which we'll see later.</p>
+</section>
+</section>
+<section data-type='sect1'>
+<h1>Other Available Data</h1>
+
+<p>They come in three flavors:</p>
+<ul>
+<li><strong>Packaged Data:</strong> these small datasets are packaged with the scikit-learn installation,
+and can be downloaded using the tools in <code>sklearn.datasets.load_*</code></li>
+<li><strong>Downloadable Data:</strong> these larger datasets are available for download, and scikit-learn
+includes tools which streamline this process.  These tools can be found in
+<code>sklearn.datasets.fetch_*</code></li>
+<li><strong>Generated Data:</strong> there are several datasets which are generated from models based on a
+random seed.  These are available in the <code>sklearn.datasets.make_*</code></li>
+</ul>
+<p>You can explore the available dataset loaders, fetchers, and generators using IPython's
+tab-completion functionality.  After importing the <code>datasets</code> submodule from <code>sklearn</code>,
+type</p>
+<pre data-type='programlisting'>datasets.load_ + TAB</pre>
+<p>or</p>
+<pre data-type='programlisting'>datasets.fetch_ + TAB</pre>
+<p>or</p>
+<pre data-type='programlisting'>datasets.make_ + TAB</pre>
+<p>to see a list of available functions.</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+from sklearn import datasets
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+# Type datasets.fetch_<tab> or datasets.load_<tab> in IPython to see all possibilities
+
+datasets.fetch_lfw_people
+</tab></tab></pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+# datasets.load_
+</pre>
+
+<p>In the next section, we'll use some of these datasets and take a look at the basic principles of machine learning.</p>
+</section>
+</section>

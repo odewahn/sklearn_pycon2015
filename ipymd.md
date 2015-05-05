@@ -17,7 +17,7 @@ docker run -it \
    -v $(pwd):/usr/data \
    -w /usr/data \
    sklearn_pycon2015 \
-   ipymd --from markdown --to atlas *.ipynb
+   ipymd --from notebook --to atlas *.ipynb
 ```
 
 ## Running the notebook server

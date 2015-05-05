@@ -1,0 +1,167 @@
+<p><small><i>This notebook was put together by <a href='http://www.vanderplas.com'>Jake Vanderplas</a> for PyCon 2015. Source and license info is on <a href='https://github.com/jakevdp/sklearn_pycon2015/'>GitHub</a>.</i></small></p>
+<section data-type='chapter'>
+<h1>Density Estimation: Gaussian Mixture Models</h1>
+
+<p>Here we'll explore <strong>Gaussian Mixture Models</strong>, which is an unsupervised clustering &amp; density estimation technique.</p>
+<p>We'll start with our standard set of initial imports</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+%matplotlib inline
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+
+# use seaborn plotting defaults
+import seaborn as sns; sns.set()
+</pre>
+
+<section data-type='sect1'>
+<h1>Introducing Gaussian Mixture Models</h1>
+
+<p>We previously saw an example of K-Means, which is a clustering algorithm which is most often fit using an expectation-maximization approach.</p>
+<p>Here we'll consider an extension to this which is suitable for both <strong>clustering</strong> and <strong>density estimation</strong>.</p>
+<p>For example, imagine we have some one-dimensional data in a particular distribution:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+np.random.seed(2)
+x = np.concatenate([np.random.normal(0, 2, 2000),
+                    np.random.normal(5, 5, 2000),
+                    np.random.normal(3, 0.5, 600)])
+plt.hist(x, 80, normed=True)
+plt.xlim(-10, 20);
+</pre>
+
+<p>Gaussian mixture models will allow us to approximate this density:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+from sklearn.mixture import GMM
+clf = GMM(4, n_iter=500, random_state=3).fit(x)
+xpdf = np.linspace(-10, 20, 1000)
+density = np.exp(clf.score(xpdf))
+
+plt.hist(x, 80, normed=True, alpha=0.5)
+plt.plot(xpdf, density, '-r')
+plt.xlim(-10, 20);
+</pre>
+
+<p>Note that this density is fit using a <strong>mixture of Gaussians</strong>, which we can examine by looking at the <code>means_</code>, <code>covars_</code>, and <code>weights_</code> attributes:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+clf.means_
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+clf.covars_
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+clf.weights_
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+plt.hist(x, 80, normed=True, alpha=0.3)
+plt.plot(xpdf, density, '-r')
+
+for i in range(clf.n_components):
+    pdf = clf.weights_[i] * stats.norm(clf.means_[i, 0],
+                                       np.sqrt(clf.covars_[i, 0])).pdf(xpdf)
+    plt.fill(xpdf, pdf, facecolor='gray',
+             edgecolor='none', alpha=0.3)
+plt.xlim(-10, 20);
+</pre>
+
+<p>These individual Gaussian distributions are fit using an expectation-maximization method, much as in K means, except that rather than explicit cluster assignment, the <strong>posterior probability</strong> is used to compute the weighted mean and covariance.
+Somewhat surprisingly, this algorithm <strong>provably</strong> converges to the optimum (though the optimum is not necessarily global).</p>
+</section>
+<section data-type='sect1'>
+<h1>How many Gaussians?</h1>
+
+<p>Given a model, we can use one of several means to evaluate how well it fits the data.
+For example, there is the Aikaki Information Criterion (AIC) and the Bayesian Information Criterion (BIC)</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+print(clf.bic(x))
+print(clf.aic(x))
+</pre>
+
+<p>Let's take a look at these as a function of the number of gaussians:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+n_estimators = np.arange(1, 10)
+clfs = [GMM(n, n_iter=1000).fit(x) for n in n_estimators]
+bics = [clf.bic(x) for clf in clfs]
+aics = [clf.aic(x) for clf in clfs]
+
+plt.plot(n_estimators, bics, label='BIC')
+plt.plot(n_estimators, aics, label='AIC')
+plt.legend();
+</pre>
+
+<p>It appears that for both the AIC and BIC, 4 components is preferred.</p>
+</section>
+<section data-type='sect1'>
+<h1>Example: GMM For Outlier Detection</h1>
+
+<p>GMM is what's known as a <strong>Generative Model</strong>: it's a probabilistic model from which a dataset can be generated.
+One thing that generative models can be useful for is <strong>outlier detection</strong>: we can simply evaluate the likelihood of each point under the generative model; the points with a suitably low likelihood (where "suitable" is up to your own bias/variance preference) can be labeld outliers.</p>
+<p>Let's take a look at this by defining a new dataset with some outliers:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+np.random.seed(0)
+
+# Add 20 outliers
+true_outliers = np.sort(np.random.randint(0, len(x), 20))
+y = x.copy()
+y[true_outliers] += 50 * np.random.randn(20)
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+clf = GMM(4, n_iter=500, random_state=0).fit(y)
+xpdf = np.linspace(-10, 20, 1000)
+density_noise = np.exp(clf.score(xpdf))
+
+plt.hist(y, 80, normed=True, alpha=0.5)
+plt.plot(xpdf, density_noise, '-r')
+#plt.xlim(-10, 20);
+</pre>
+
+<p>Now let's evaluate the log-likelihood of each point under the model, and plot these as a function of <code>y</code>:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+log_likelihood = clf.score_samples(y)[0]
+plt.plot(y, log_likelihood, '.k');
+</pre>
+
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+detected_outliers = np.where(log_likelihood &lt; -9)[0]
+
+print("true outliers:")
+print(true_outliers)
+print("\ndetected outliers:")
+print(detected_outliers)
+</pre>
+
+<p>The algorithm misses a few of these points, which is to be expected (some of the "outliers" actually land in the middle of the distribution!)</p>
+<p>Here are the outliers that were missed:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+set(true_outliers) - set(detected_outliers)
+</pre>
+
+<p>And here are the non-outliers which were spuriously labeled outliers:</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+set(detected_outliers) - set(true_outliers)
+</pre>
+
+<p>Finally, we should note that although all of the above is done in one dimension, GMM does generalize to multiple dimensions, as we'll see in the breakout session.</p>
+</section>
+<section data-type='sect1'>
+<h1>Other Density Estimators</h1>
+
+<p>The other main density estimator that you might find useful is <em>Kernel Density Estimation</em>, which is available via <code>sklearn.neighbors.KernelDensity</code>. In some ways, this can be thought of as a generalization of GMM where there is a gaussian placed at the location of <em>every</em> training point!</p>
+<pre data-code-language='python' data-executable='true' data-type='programlisting'>
+from sklearn.neighbors import KernelDensity
+kde = KernelDensity(0.15).fit(x[:, None])
+density_kde = np.exp(kde.score_samples(xpdf[:, None]))
+
+plt.hist(x, 80, normed=True, alpha=0.5)
+plt.plot(xpdf, density, '-b', label='GMM')
+plt.plot(xpdf, density_kde, '-r', label='KDE')
+plt.xlim(-10, 20)
+plt.legend();
+</pre>
+
+<p>All of these density estimators can be viewed as <strong>Generative models</strong> of the data: that is, that is, the model tells us how more data can be created which fits the model.</p>
+</section>
+</section>
